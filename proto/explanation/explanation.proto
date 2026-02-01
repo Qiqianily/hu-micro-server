@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package explanation;
+
+import "google/protobuf/timestamp.proto";
+
+// 请求参数：id
+message GetExplanationByIdRequest {
+  int32 id = 1;
+}
+
+// 解析的键值对
+message ExplanationItem {
+  string key = 1;
+  string value = 2;
+}
+
+// 返回的数据结构
+message GetExplanationByIdResponse {
+  int32 treatise_id = 1;
+  string uuid = 2;
+  repeated ExplanationItem explanation_items = 3;
+  repeated string summary = 4;
+  google.protobuf.Timestamp created_at = 5;
+}
+
+service ExplanationHuService {
+  rpc GetExplanationById(GetExplanationByIdRequest) returns (GetExplanationByIdResponse) {}
+}

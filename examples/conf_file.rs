@@ -1,0 +1,20 @@
+use hu_server::{
+    conf::app::AppConfig,
+    log::logger::{init_logger_with_file, init_logger_without_file},
+};
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let config = AppConfig::load()?;
+    eprintln!("config:{:?}", config);
+    let log_level = config.grpc_config().log_level();
+    if config.is_log_file() {
+        println!("log_file");
+        let _guard = init_logger_with_file(log_level).await?;
+    } else {
+        println!("not log file");
+        init_logger_without_file(log_level).await?;
+    }
+    tracing::info!("finished");
+    Ok(())
+}
