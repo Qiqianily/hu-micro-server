@@ -49,8 +49,10 @@ jobs:
       # 步骤1: 检出代码
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-
-      # 步骤2: 设置 Rust musl 环境
+      # 步骤2: 安装 Protoc
+      - name: 🏗️ Install Protoc
+        uses: arduino/setup-protoc@v3
+      # 步骤3: 设置 Rust musl 环境
       - name: ⚙️ Setup Rust Musl Environment
         run: |
           # 安装 Rust
@@ -73,7 +75,7 @@ jobs:
 
           echo "✅ Rust musl 环境设置完成"
 
-      # 步骤3: 缓存依赖
+      # 步骤4: 缓存依赖
       - name: 📦 Cache dependencies
         uses: actions/cache@v4
         with:
@@ -85,7 +87,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      # 步骤4: 构建静态二进制文件
+      # 步骤5: 构建静态二进制文件
       - name: 🔨 Build static binary
         run: |
           source $HOME/.cargo/env
@@ -123,7 +125,7 @@ jobs:
             exit 1
           fi
 
-      # 步骤5: 提取版本号
+      # 步骤6: 提取版本号
       - name: 🏷️ Extract version tag
         id: version
         run: |
@@ -143,7 +145,7 @@ jobs:
           echo "IS_TAG=$IS_TAG" >> $GITHUB_OUTPUT
           echo "✅ 使用版本: $VERSION"
 
-      # 步骤6: 为两个服务分别准备部署包
+      # 步骤7: 为两个服务分别准备部署包
       - name: 📦 Prepare deployment package
         run: |
           # 创建部署目录
@@ -182,7 +184,7 @@ jobs:
           # 创建压缩包
           tar czf deployment-${{ env.VERSION }}.tar.gz -C deploy-package .
 
-      # 步骤7: 上传构建产物
+      # 步骤8: 上传构建产物
       - name: 📤 Upload build artifact
         uses: actions/upload-artifact@v4
         with:
