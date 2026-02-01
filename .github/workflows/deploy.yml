@@ -158,7 +158,7 @@ jobs:
           cp -v "target/${{ env.RUST_TARGET }}/release/${{ env.HTTP_SERVER_BINARY}}" deploy-package/
 
           # 2. 设置执行权限
-          chmod +x deploy-package/${{ env.GRPC_SERVER_BINARY}} deploy-package/${{ env.HTTP_SERVER_BINARY}} deploy-package/${{ env.CONFIG_FILE }}
+          chmod +x deploy-package/${{ env.GRPC_SERVER_BINARY}} deploy-package/${{ env.HTTP_SERVER_BINARY}}
 
           # 3. 复制 Dockerfile
           cp -v Dockerfile.grpc Dockerfile.http deploy-package/
