@@ -47,7 +47,9 @@ impl ExplanationHuService for ExplanationHuServiceImpl {
         &self,
         request: Request<GetExplanationByIdRequest>,
     ) -> Result<Response<GetExplanationByIdResponse>, Status> {
+        tracing::info!("Start query data");
         let id = request.into_inner().id;
+        tracing::info!("Start query data {}", id);
         // 查询数据库
         let row: (i32, Uuid, serde_json::Value, Vec<String>, DateTime<Utc>)  = sqlx::query_as(
                 "SELECT treatise_id as id, uuid, explanation, summary, created_at FROM explain_hu WHERE treatise_id = $1",
@@ -64,6 +66,7 @@ impl ExplanationHuService for ExplanationHuServiceImpl {
             summary: row.3,
             created_at: Some(created_at),
         };
+        tracing::info!("Query data success");
         // 返回结果
         Ok(Response::new(result))
     }

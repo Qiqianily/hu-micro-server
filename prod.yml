@@ -9,6 +9,7 @@ http:
     - "http://localhost:7788"
 # GRPC configuration
 grpc:
+  name: "hu_server_grpc"
   port: 50001
   log_level: "info"
 # database configuration
@@ -30,5 +31,5 @@ redis:
   max_idle: 10 # 最大空闲数
   timeout_sec: 5 # 超时 5 秒
 # log file configuration
-log_file: true
+log_file: false
 is_dev: false
