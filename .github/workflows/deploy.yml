@@ -248,13 +248,13 @@ jobs:
             docker compose down 2>/dev/null || echo "⚠️ 无运行中的服务"
 
             # 清理旧文件
-            rm -rf ${{ env.GRPC_SERVER_BINARY }} ${{ env.HTTP_SERVER_BINARY }} ${{ env.DOCKER_COMPOSE_FILE }} ${{ env.ENV_FILE }} ${{ env.CONFIG_FILE }} ${{ env.GRPC_DOCKER_FILE }} ${{ env.HTTP_DOCKER_FILE }} deploy-package
+            rm -rf ${{ env.GRPC_SERVER_BINARY }} ${{ env.HTTP_SERVER_BINARY }} ${{ env.DOCKER_COMPOSE_FILE }} ${{ env.ENV_FILE }} ./config/${{ env.CONFIG_FILE }} ${{ env.GRPC_DOCKER_FILE }} ${{ env.HTTP_DOCKER_FILE }} deploy-package
 
             # 解压部署包
             tar xzf deployment-${{ needs.build.outputs.version }}.tar.gz
 
             # 验证必要文件
-            for file in ${{ env.GRPC_SERVER_BINARY }} ${{ env.HTTP_SERVER_BINARY }} ${{ env.DOCKER_COMPOSE_FILE }} ${{ env.CONFIG_FILE }} ${{ env.GRPC_DOCKER_FILE }} ${{ env.HTTP_DOCKER_FILE }} ${{ env.ENV_FILE }}; do
+            for file in ${{ env.GRPC_SERVER_BINARY }} ${{ env.HTTP_SERVER_BINARY }} ${{ env.DOCKER_COMPOSE_FILE }} ./config/${{ env.CONFIG_FILE }} ${{ env.GRPC_DOCKER_FILE }} ${{ env.HTTP_DOCKER_FILE }} ${{ env.ENV_FILE }}; do
               [ -f "$file" ] || { echo "❌ 文件缺失: $file"; exit 1; }
             done
 
