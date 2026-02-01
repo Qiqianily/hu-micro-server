@@ -47,7 +47,6 @@ impl ExplanationHuService for ExplanationHuServiceImpl {
         &self,
         request: Request<GetExplanationByIdRequest>,
     ) -> Result<Response<GetExplanationByIdResponse>, Status> {
-        tracing::info!("Start query data");
         let id = request.into_inner().id;
         tracing::info!("Start query data {}", id);
         // 查询数据库

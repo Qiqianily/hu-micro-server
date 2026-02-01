@@ -25,7 +25,10 @@ async fn main() -> anyhow::Result<()> {
     // 4. 创建服务
     let srv = ExplanationHuServiceImpl::new(get_global_database_pool());
     // 服务地址
-    let addr = format!("[::1]:{}", config.grpc_config().port()).parse()?;
+    let mut addr = format!("0.0.0.0:{}", config.grpc_config().port()).parse()?;
+    if config.is_dev() {
+        addr = format!("[::1]:{}", config.grpc_config().port()).parse()?;
+    }
     tracing::info!("Starting UserService on {}", addr);
     Server::builder()
         .add_service(ExplanationHuServiceServer::new(srv))
