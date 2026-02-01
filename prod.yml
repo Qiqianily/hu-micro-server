@@ -30,4 +30,5 @@ redis:
   max_idle: 10 # 最大空闲数
   timeout_sec: 5 # 超时 5 秒
 # log file configuration
-log_file: false
+log_file: true
+is_dev: false

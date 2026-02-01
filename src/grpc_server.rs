@@ -9,7 +9,7 @@ use tonic::transport::Server;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // let addr = "[::1]:50051".parse()?;
+    // let addr = "[::1]:50001".parse()?;
     // 1. 读取配置信息
     let config = AppConfig::load()?;
     let log_level = config.grpc_config().log_level();
