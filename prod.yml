@@ -1,16 +1,20 @@
-# base configuration
-base:
-  port: 50001
+# http web configuration
+http:
+  port: 8888
   log_level: "info"
   allowed_hosts:
     - "http://shanghanlun.com:7777"
-    - "http://117.72.***.38:7777"
+    - "http://117.72.195.38:7777"
     - "http://localhost:5173"
     - "http://localhost:7788"
-
+# GRPC configuration
+grpc:
+  port: 50001
+  log_level: "info"
+# database configuration
 database:
   url: "postgres://postgres:yx379099@117.72.195.38:5432/micro-server-demo?options=-c%20timezone=Asia/Shanghai"
-  min_connections: 5 # 最小连接数
+  min_connections: 3 # 最小连接数
   max_connections: 10 # 最大连接数
   connect_timeout_secs: 10
   acquire_timeout_secs: 6
@@ -19,11 +23,11 @@ database:
   sqlx_logging: false
   schema: "public"
   timezone: "Asia/Shanghai"
-
+# redis configuration
 redis:
   url: "redis://:yx379099@medicine_redis"
   max_open: 20 # 最大连接数
   max_idle: 10 # 最大空闲数
   timeout_sec: 5 # 超时 5 秒
-
-log_file: true
+# log file configuration
+log_file: false

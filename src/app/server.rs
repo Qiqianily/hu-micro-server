@@ -33,7 +33,7 @@ impl Server {
         let app_router = self.build_router(app_state).await;
         // use axum to serve our application, listening on the specified address
         // 构建 address
-        let addr = format!("hu_server_grpc:{}", self.server_config.http_config().port());
+        let addr = format!("0.0.0.0:{}", self.server_config.http_config().port());
         // create listener 创建监听器
         let listener = tokio::net::TcpListener::bind(&addr).await?;
         // info logs the address we're listening to on 输出日志。
