@@ -161,7 +161,7 @@ jobs:
           chmod +x deploy-package/${{ env.GRPC_SERVER_BINARY}} deploy-package/${{ env.HTTP_SERVER_BINARY}}
 
           # 3. 复制 Dockerfile
-          cp -v Dockerfile.grpc Dockerfile.http deploy-package/
+          cp -v ${{ env.GRPC_DOCKER_FILE}} ${{ env.HTTP_DOCKER_FILE}} ${{ env.DOCKER_COMPOSE_FILE}} deploy-package/
 
           # 4. 复制配置文件
           mkdir -p deploy-package/config
