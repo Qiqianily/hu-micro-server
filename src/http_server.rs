@@ -9,7 +9,7 @@ async fn main() -> anyhow::Result<()> {
     let _guard = log::logger::init_logger_with_file(log_level).await?;
     // 3. 服务地址
     let mut grpc_addr = format!(
-        "{}:{}",
+        "http://{}:{}",
         config.grpc_config().name(),
         config.grpc_config().port()
     );

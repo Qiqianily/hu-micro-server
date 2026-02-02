@@ -23,7 +23,7 @@ env:
 
   # 📁 目录配置 (按需修改)
   REMOTE_DEPLOY_DIR: "/hu-server/deploy/"
-  REMOTE_CONFIG_DIR: "/hu-server/deploy/confing/"
+  REMOTE_CONFIG_DIR: "/hu-server/deploy/config/"
 
   # 🐳 Docker 配置
   DOCKER_COMPOSE_FILE: "docker-compose.yml"
@@ -329,61 +329,80 @@ jobs:
           for service in ${{ env.GRPC_SERVER_IMAGE }} ${{ env.HTTP_SERVER_IMAGE }}; do
             echo "📦 处理 $service 服务..."
 
-            # 调试：显示实际使用的服务名
-            echo "🔍 使用的服务名: $service"
-
-            # 使用精确匹配
-            docker images --format "{{.ID}} {{.Repository}} {{.Tag}} {{.CreatedAt}}" "$service:*" | \
-            sort -k4 -r > /tmp/${service}_images.txt 2>/dev/null || true
+            # 获取所有镜像，并按创建时间戳排序（最新的在前）
+            # 使用 docker inspect 获取准确的创建时间戳
+            docker images --format "{{.Repository}}:{{.Tag}}" "$service:*" | while read -r image; do
+              if [ -n "$image" ]; then
+                # 获取镜像创建时间的时间戳（秒）
+                created=$(docker inspect -f '{{.Created}}' "$image" 2>/dev/null | head -1)
+                if [ -n "$created" ]; then
+                  timestamp=$(date -d "$created" +%s 2>/dev/null || echo "0")
+                  echo "$timestamp $image"
+                fi
+              fi
+            done | sort -rn > /tmp/${service}_images.txt 2>/dev/null || true
 
             # 统计镜像数量
             image_count=$(wc -l < /tmp/${service}_images.txt 2>/dev/null || echo 0)
             echo "  发现 $image_count 个镜像"
 
             if [ $image_count -eq 0 ]; then
-              echo " 🚀 尝试其他匹配方式..."
-              # 显示所有镜像，查看实际格式
-              docker images | grep "$service"
+              echo "  ℹ️  没有找到 $service 的镜像"
+              continue
             fi
 
             if [ $image_count -le $KEEP_COUNT ]; then
-              echo " ✅ 镜像数量不超过 $KEEP_COUNT，跳过清理"
+              echo "  ✅ 镜像数量不超过 $KEEP_COUNT，跳过清理"
               continue
             fi
 
             # 显示即将处理的镜像
-            echo "📊 镜像列表:"
+            echo "  📊 镜像列表（按创建时间排序，最新的在前）:"
             cat /tmp/${service}_images.txt
 
             # 删除保留数量之外的镜像
             line_num=0
             while IFS= read -r line; do
               ((line_num++))
-              image_id=$(echo "$line" | awk '{print $1}')
-              repo=$(echo "$line" | awk '{print $2}')
-              tag=$(echo "$line" | awk '{print $3}')
+              timestamp=$(echo "$line" | awk '{print $1}')
+              full_image=$(echo "$line" | awk '{print $2}')
+
+              # 从完整镜像名中提取仓库和标签
+              repo="${full_image%:*}"
+              tag="${full_image##*:}"
 
               if [ $line_num -le $KEEP_COUNT ]; then
                 # 保留的镜像
-                echo "  ✅ 保留: $repo:$tag ($image_id)"
+                human_time=$(date -d "@$timestamp" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "未知时间")
+                echo "  ✅ 保留[$line_num]: $repo:$tag ($human_time)"
               else
                 # 需要删除的镜像
-                echo "🗑️  删除: $repo:$tag"
+                echo "  🗑️  删除[$line_num]: $repo:$tag"
 
-                # 强制删除使用该镜像的容器
-                docker ps -a --filter "ancestor=$repo:$tag" -q 2>/dev/null | xargs -r docker rm -f
+                # 查找并删除使用该镜像的容器
+                container_ids=$(docker ps -a --filter "ancestor=$repo:$tag" -q 2>/dev/null)
+                if [ -n "$container_ids" ]; then
+                  echo "    停止并删除关联的容器..."
+                  docker stop $container_ids 2>/dev/null || true
+                  docker rm -f $container_ids 2>/dev/null || true
+                fi
 
-                # 强制删除镜像
-                docker rmi -f "$image_id" 2>/dev/null || echo "    ⚠️ 无法删除 $repo:$tag"
+                # 删除镜像
+                docker rmi -f "$full_image" 2>/dev/null || echo "    ⚠️ 无法删除 $full_image，可能已被其他镜像引用"
               fi
             done < /tmp/${service}_images.txt
 
             rm -f /tmp/${service}_images.txt
+            echo ""
           done
 
-          # 最终清理
-          echo "🧽 最终清理..."
+          # 最终清理悬空镜像
+          echo "🧽 清理悬空镜像..."
           docker image prune -f 2>/dev/null || true
+
+          # 显示清理后剩余的镜像
+          echo "📋 清理后的镜像列表:"
+          docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.CreatedSince}}" | grep -E "(hu_server_|REPOSITORY)" || true
 
           echo "✅ 清理完成！每个服务保留最新的 $KEEP_COUNT 个镜像"
           echo "🎉 部署完成! 镜像清理完成！当前运行版本: ${{ needs.build.outputs.version }}"
