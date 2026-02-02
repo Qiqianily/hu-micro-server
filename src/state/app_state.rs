@@ -1,6 +1,11 @@
 use std::{ops::Deref, sync::Arc};
 
-use crate::client::{get_global_grpc_client_pool, manager::SimpleGrpcClientPool};
+use tokio::sync::Mutex;
+use tonic::transport::Channel;
+
+use crate::{
+    pb::explanation::explanation_hu_service_client::ExplanationHuServiceClient, response::ApiResult,
+};
 
 // AppStateInner is a struct that holds the inner state of the application.
 // It is used to store application-specific data that needs to be shared between different parts of the application.
@@ -10,25 +15,31 @@ pub struct AppStateInner {}
 /// AppState app 的状态
 ///
 /// # 成员
-/// - db_pool: postgres 连接池
-/// - redis_client: redis client 里面维持了一个连接池
+/// - grpc_client: redis client 里面维持了一个连接池
 /// - inner: 内部共享状态
 // AppState is a struct that holds the state of the application.
 // It contains a pool of postgres connections and a reference to an inner struct.
 #[derive(Debug, Clone)]
 pub struct AppState {
-    pub grpc_client: &'static SimpleGrpcClientPool,
+    pub grpc_client: Arc<Mutex<ExplanationHuServiceClient<Channel>>>,
     pub inner: Arc<AppStateInner>,
 }
 // construct a new AppState object with a pool of postgres connections and an inner struct.
 impl AppState {
-    pub async fn new() -> Self {
+    pub async fn new(grpc_addr: &str) -> ApiResult<Self> {
         // 获取全局的静态 database pool 引用
-        let grpc_client = get_global_grpc_client_pool();
-        Self {
+        // let grpc_client = get_global_grpc_client_pool();
+        // 创建 gRPC 客户端
+        let channel = tonic::transport::Channel::from_shared(grpc_addr.to_string())
+            .expect("创建 EndPoint 时出错！")
+            .connect()
+            .await
+            .expect("连接 GRPC 时出错了！");
+        let grpc_client = Arc::new(Mutex::new(ExplanationHuServiceClient::new(channel)));
+        Ok(Self {
             grpc_client,
             inner: Arc::new(AppStateInner {}),
-        }
+        })
     }
 }
 

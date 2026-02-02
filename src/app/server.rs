@@ -8,8 +8,7 @@ use bytesize::ByteSize;
 use tower_http::{normalize_path::NormalizePathLayer, timeout::TimeoutLayer, trace::TraceLayer};
 
 use crate::{
-    client, conf, middlewares, router, state::app_state::AppState,
-    utils::latency::LatencyOnResponse,
+    conf, middlewares, router, state::app_state::AppState, utils::latency::LatencyOnResponse,
 };
 
 /// 服务端配置信息
@@ -26,13 +25,13 @@ impl Server {
     /// 启动服务
     pub async fn start_server(&self, grpc_addr: &str) -> anyhow::Result<()> {
         // 初始化全局的静态 Grpc Client 连接池实例
-        client::set_global_grpc_client_pool(grpc_addr, 10).await?;
+        // client::set_global_grpc_client_pool(grpc_addr, 10).await?;
         // new app state 创建 app 数据状态对象
-        let app_state = AppState::new().await;
+        let app_state = AppState::new(grpc_addr).await?;
         // create our application router 创建路由
         let app_router = self.build_router(app_state).await;
         // use axum to serve our application, listening on the specified address
-        // 构建 address
+        // 构建 http address
         let addr = format!("0.0.0.0:{}", self.server_config.http_config().port());
         // create listener 创建监听器
         let listener = tokio::net::TcpListener::bind(&addr).await?;

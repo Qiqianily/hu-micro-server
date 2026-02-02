@@ -30,6 +30,5 @@ redis:
   max_open: 20 # 最大连接数
   max_idle: 10 # 最大空闲数
   timeout_sec: 5 # 超时 5 秒
-# log file configuration
-log_file: false
+# is development environment
 is_dev: false

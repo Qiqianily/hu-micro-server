@@ -1,14 +1,12 @@
-use hu_server::{
-    client::manager::SimpleGrpcClientPool, pb::explanation::GetExplanationByIdRequest,
+use hu_server::pb::explanation::{
+    GetExplanationByIdRequest, explanation_hu_service_client::ExplanationHuServiceClient,
 };
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let max_pool_size = 10;
-    let pool = SimpleGrpcClientPool::new("http://[::1]:50001", max_pool_size)?;
+    let mut client = ExplanationHuServiceClient::connect("http://[::1]:50001").await?;
     for id in 1..10 {
         let explanation_request = GetExplanationByIdRequest { id };
-        let mut client = pool.get_client().await?;
         let response = client.get_explanation_by_id(explanation_request).await?;
         println!(
             "Response: {}",
