@@ -320,71 +320,38 @@ jobs:
       # 步骤6: 清理镜像
       - name: 📦 智能清理镜像
         run: |
+          # 清理旧镜像
           echo "🧹 智能清理旧镜像（每个服务保留最新版本）..."
+          echo "📦 清理 GRPC 相关的旧镜像..."
+          CURRENT_GRPC_IMAGE=$(docker inspect ${{ env.GRPC_SERVER_IMAGE }} --format '{{.Config.Image}}' 2>/dev/null || echo "")
+          [ -n "$CURRENT_GRPC_IMAGE" ] && echo "🆕 当前镜像: $CURRENT_GRPC_IMAGE"
 
-          # 只保留最新版本
-          KEEP_COUNT=1
-
-          # 将环境变量赋值给局部变量，以便复用
-          GRPC_SERVER_IMAGE="${{ env.GRPC_SERVER_IMAGE }}"
-          HTTP_SERVER_IMAGE="${{ env.HTTP_SERVER_IMAGE }}"
-
-          echo "🔍 使用环境变量:"
-          echo "GRPC_SERVER_IMAGE: $GRPC_SERVER_IMAGE"
-          echo "HTTP_SERVER_IMAGE: $HTTP_SERVER_IMAGE"
-          echo ""
-
-          echo "📋 清理前镜像列表:"
-          docker images | grep -E "hu_server_|REPOSITORY" || true
-          echo ""
-
-          # 为每个服务处理
-          for service in $GRPC_SERVER_IMAGE $HTTP_SERVER_IMAGE; do
-            echo "📦 处理 $service 服务（保留最新版）..."
-
-            # 获取所有镜像，按创建时间排序
-            IMAGE_LIST=$(docker images --format "{{.Repository}}:{{.Tag}} {{.CreatedAt}}" | grep "^${service}:" | sort -k2 -r)
-
-            # 统计镜像数量
-            IMAGE_COUNT=$(echo "$IMAGE_LIST" | wc -l 2>/dev/null | tr -d ' ' || echo 0)
-
-            if [ $IMAGE_COUNT -eq 0 ]; then
-              echo "  ℹ️  没有找到 $service 的镜像"
-              continue
+          docker images --filter "reference=*${{ env.GRPC_SERVER_IMAGE }}*" --format "{{.Repository}}:{{.Tag}}" | \
+          while read -r image; do
+            if [ "$image" != "$CURRENT_GRPC_IMAGE" ] && [ -n "$image" ]; then
+              echo "🗑️ 删除: $image"
+              docker rmi "$image" 2>/dev/null || echo "⚠️ 无法删除 $image"
             fi
-
-            echo "  发现 $IMAGE_COUNT 个镜像"
-
-            if [ $IMAGE_COUNT -le $KEEP_COUNT ]; then
-              echo "  ✅ 镜像数量不超过 $KEEP_COUNT，跳过清理"
-              continue
-            fi
-
-            # 显示镜像列表
-            echo "  📊 镜像列表（最新的在前）:"
-            echo "$IMAGE_LIST"
-
-            # 删除保留数量之外的镜像
-            echo "  🗑️  删除旧镜像:"
-            echo "$IMAGE_LIST" | tail -n +$(($KEEP_COUNT + 1)) | while read -r line; do
-              image_name=$(echo "$line" | awk '{print $1}')
-              echo "    - $image_name"
-              # 先删除使用该镜像的容器
-              docker ps -a --filter "ancestor=$image_name" -q 2>/dev/null | xargs -r docker rm -f 2>/dev/null || true
-              # 删除镜像
-              docker rmi -f "$image_name" 2>/dev/null || echo "      删除失败（可能已被引用）"
-            done
-
-            echo ""
           done
 
+          echo "📦 清理 HTTP 相关的旧镜像..."
+          CURRENT_HTTP_IMAGE=$(docker inspect ${{ env.HTTP_SERVER_IMAGE }} --format '{{.Config.Image}}' 2>/dev/null || echo "")
+          [ -n "$CURRENT_HTTP_IMAGE" ] && echo "🆕 当前镜像: $CURRENT_HTTP_IMAGE"
+
+          docker images --filter "reference=*${{ env.HTTP_SERVER_IMAGE }}*" --format "{{.Repository}}:{{.Tag}}" | \
+          while read -r image; do
+            if [ "$image" != "$CURRENT_HTTP_IMAGE" ] && [ -n "$image" ]; then
+              echo "🗑️ 删除: $image"
+              docker rmi "$image" 2>/dev/null || echo "⚠️ 无法删除 $image"
+            fi
+          done
           # 清理悬空镜像
           echo "🧽 清理悬空镜像..."
           docker image prune -f 2>/dev/null || true
 
           echo "📋 清理后的镜像列表:"
-          docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.CreatedSince}}" | grep -E "(hu_server_|REPOSITORY)" || true
+          docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.CreatedSince}}" | grep -E "(${{env.PROJECT_NAME}}_|REPOSITORY)" || true
 
           echo ""
-          echo "✅ 清理完成！每个服务只保留最新的 $KEEP_COUNT 个镜像"
+          echo "✅ 清理完成！每个服务只保留正在使用的镜像"
           echo "🎉 部署完成！当前运行版本: ${{ needs.build.outputs.version }}"
